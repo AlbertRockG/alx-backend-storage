@@ -1,48 +1,29 @@
 #!/usr/bin/env python3
 """
-Script to display statistics about Nginx logs stored in MongoDB.
-
-Usage:
-    ./100-stats_nginx <database_name>
+Provides statistics about Nginx logs stored in MongoDB.
 """
 
-import sys
 from pymongo import MongoClient
 
+def nginx_stats():
+    """
+    Retrieves and prints statistics from the nginx collection.
+    """
+    client = MongoClient()
+    db = client.logs
+    collection = db.nginx
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: 100-stats_nginx <database_name>")
-        sys.exit(1)
-    
-    db_name = sys.argv[1]
+    total_logs = collection.count_documents({})
+    print(f"{total_logs} logs")
 
-    try:
-        # Connect to MongoDB (default host and port)
-        client = MongoClient()
-        db = client[db_name]
-        collection = db.nginx
+    print("Methods:")
+    methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    for method in methods:
+        count = collection.count_documents({'method': method})
+        print(f"\tmethod {method}: {count}")
 
-        # Total number of logs
-        total_logs = collection.count_documents({})
-        print(f"{total_logs} logs")
-
-        # Methods statistics
-        print("Methods:")
-        methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-        for method in methods:
-            count = collection.count_documents({'method': method})
-            print(f"\t{method}: {count}")
-        
-        # Count of GET /status
-        get_status = collection.count_documents({'method': 'GET', 'path': '/status'})
-        print(f"GET /status: {get_status}")
-    
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sys.exit(1)
-
+    status_check = collection.count_documents({'method': 'GET', 'path': '/status'})
+    print(f"{status_check} status check")
 
 if __name__ == "__main__":
-    main()
-
+    nginx_stats()
